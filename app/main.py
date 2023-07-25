@@ -18,11 +18,11 @@ for data in content:
 for data in filteredContent:
     print(data)
 
-
-
 current_time = datetime.datetime.now().strftime("%Y-%m-%d %H_%M_%S")
-file_name = f"{current_time}.txt"
 
-txt_file = open( f"{file_name}", "w+")
-txt_file.write(data)
+file_name = f"{current_time}.txt"
+file_path = "results/" + file_name
+
+with open(file_path, "w+") as txt_file:
+    txt_file.write(data)
 txt_file.close()
