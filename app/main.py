@@ -1,28 +1,47 @@
-from bs4 import BeautifulSoup
+import time
+import pandas as pd
 import requests
-import datetime
+from bs4 import BeautifulSoup
 
-url = input("📄 Введите ссылку на статью: ")
-page = requests.get(url)
-soup = BeautifulSoup(page.text, "html.parser")
+def search_articles(query, num_pages=1):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
 
-content = []
-filteredContent = []
+    links = []
+    for page in range(num_pages):
+        # Формируем URL для запроса
+        url = f'https://www.google.com/search?q={query}&start={page}'
 
-content = soup.findAll('div', class_='content')
+        # Отправляем HTTP-запрос к Google с указанными заголовками
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()  # Проверка статуса ответа
 
-for data in content:
-    if data.find('p') is not None:
-        filteredContent.append(data.text)
+        # Используем BeautifulSoup для парсинга HTML
+        soup = BeautifulSoup(response.text, 'html.parser')
 
-for data in filteredContent:
-    print(data)
+        # Ищем результаты поиска
+        search_results = soup.find_all('div', class_='tF2Cxc')
 
-current_time = datetime.datetime.now().strftime("%Y-%m-%d %H_%M_%S")
+        # Извлекаем заголовок и ссылку для каждого результата
+        for result in search_results:
+            title = result.find('h3').get_text()
+            link = result.find('a')['href']
+            links.append((title, link))
 
-file_name = f"{current_time}.txt"
-file_path = "results/" + file_name
+    return links
 
-with open(file_path, "w+") as txt_file:
-    txt_file.write(data)
-txt_file.close()
+if __name__ == "__main__":
+    query = input("Ваш запрос: ")
+    num_pages = 2
+
+    links = search_articles(query, num_pages)
+
+    for number, (title, link) in enumerate(links, 1):
+        print(f"{number} - {title} - {link}")
+
+    # Сохраняем ссылки в Excel-файл
+    df = pd.DataFrame(links, columns=['Title', 'Link'])
+    df.index += 1
+    path = "results/" + query + ".xlsx"
+    df.to_excel(path, index_label='Number')
